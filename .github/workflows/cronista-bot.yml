@@ -44,7 +44,7 @@ jobs:
       - name: Crear Rama, Commit y Push (Cuenta Principal)
         run: |
           git config user.name "Julianidiego"
-          git config user.email "Julianidiego96@gmail.com"
+          git config user.email "diego.juliani289761@alumnos.info.unlp.edu.ar"
           git checkout -b "$BRANCH"
           git add data/cronicas/
           git commit -m "feat(lore): registra nueva crónica de Arda ($BRANCH)" \
