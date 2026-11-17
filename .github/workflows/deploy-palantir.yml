@@ -1,0 +1,32 @@
+name: Actualizar Web Palantir
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'data/cronicas/**', 'docs/**' ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compilar índice de crónicas
+        run: |
+          python3 -c '
+          import glob, json, os
+          os.makedirs("docs", exist_ok=True)
+          archivos = sorted(glob.glob("data/cronicas/*.json"), reverse=True)
+          cronicas = [json.load(open(a, encoding="utf-8")) for a in archivos]
+          with open("docs/indice.json", "w", encoding="utf-8") as f:
+              json.dump(cronicas, f, ensure_ascii=False, indent=2)
+          '
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'docs'
+      - uses: actions/deploy-pages@v4
