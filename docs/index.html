@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>El Palantír de Arda — Crónicas Recopiladas</title>
+  <style>
+    body {
+      background-color: #0d0f14;
+      color: #e6dcc8;
+      font-family: 'Georgia', serif;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      text-align: center;
+      border-bottom: 1px solid #c5a059;
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      max-width: 750px;
+      width: 100%;
+    }
+    h1 {
+      color: #d4af37;
+      letter-spacing: 2px;
+      margin-bottom: 0.5rem;
+    }
+    .stats {
+      font-size: 0.95rem;
+      color: #a89f8d;
+    }
+    .palantir-btn {
+      background: radial-gradient(circle, #2a4b8d 0%, #0f1c38 70%, #050914 100%);
+      color: #fff;
+      border: 2px solid #d4af37;
+      border-radius: 50px;
+      padding: 0.9rem 2rem;
+      font-family: 'Georgia', serif;
+      font-size: 1.05rem;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(66, 135, 245, 0.5);
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin: 1.5rem 0;
+    }
+    .palantir-btn:hover {
+      transform: scale(1.04);
+      box-shadow: 0 0 30px rgba(212, 175, 55, 0.8);
+    }
+    input#buscador {
+      width: 100%;
+      max-width: 500px;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      border: 1px solid #c5a059;
+      background-color: #161922;
+      color: #e6dcc8;
+      font-family: 'Georgia', serif;
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+      max-width: 1000px;
+      width: 100%;
+    }
+    .card {
+      background-color: #161922;
+      border: 1px solid #4a3f28;
+      border-left: 4px solid #d4af37;
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+    .card h3 {
+      margin-top: 0;
+      color: #d4af37;
+    }
+    .card p {
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .card a {
+      color: #7aa2f7;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    #vision-palantir {
+      max-width: 700px;
+      background: #1a1f2e;
+      border: 1px solid #d4af37;
+      padding: 1.5rem;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      display: none;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>EL PALANTÍR DE ARDA</h1>
+    <div class="stats" id="contador">Consultando los archivos de la Tierra Media...</div>
+    <button class="palantir-btn" onclick="consultarPalantir()">🔮 Consultar el Palantír (Visión Aleatoria)</button>
+  </header>
+
+  <div id="vision-palantir"></div>
+
+  <input type="text" id="buscador" placeholder="Buscar personaje, reino o crónica..." oninput="filtrar()" />
+
+  <div class="grid" id="lista-cronicas"></div>
+
+  <script>
+    let todasLasCronicas = [];
+
+    async function cargarIndice() {
+      try {
+        const res = await fetch('indice.json');
+        todasLasCronicas = await res.json();
+        document.getElementById('contador').textContent =
+          `Crónicas registradas automáticamente: ${todasLasCronicas.length}`;
+        renderizar(todasLasCronicas);
+      } catch (e) {
+        document.getElementById('contador').textContent =
+          'Aún no hay crónicas compiladas. Ejecuta el workflow en GitHub Actions.';
+      }
+    }
+
+    function renderizar(lista) {
+      const contenedor = document.getElementById('lista-cronicas');
+      contenedor.innerHTML = lista.slice(0, 30).map(c => `
+        <div class="card">
+          <h3>${c.titulo}</h3>
+          <p>${c.extracto}</p>
+          <a href="${c.fuente}" target="_blank">Leer registro original ↗</a>
+        </div>
+      `).join('');
+    }
+
+    function filtrar() {
+      const q = document.getElementById('buscador').value.toLowerCase();
+      const filtradas = todasLasCronicas.filter(c =>
+        c.titulo.toLowerCase().includes(q) || c.extracto.toLowerCase().includes(q)
+      );
+      renderizar(filtradas);
+    }
+
+    function consultarPalantir() {
+      if (!todasLasCronicas.length) return;
+      const aleatoria = todasLasCronicas[Math.floor(Math.random() * todasLasCronicas.length)];
+      const visor = document.getElementById('vision-palantir');
+      visor.style.display = 'block';
+      visor.innerHTML = `
+        <h2 style="color:#d4af37; margin-top:0;">✨ Visión del Palantír: ${aleatoria.titulo}</h2>
+        <p>${aleatoria.extracto}</p>
+        <small style="color:#a89f8d;">Registrado el ${aleatoria.fecha_registro}</small>
+      `;
+    }
+
+    cargarIndice();
+  </script>
+</body>
+</html>
