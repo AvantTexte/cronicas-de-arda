@@ -1,0 +1,66 @@
+name: Bot Cronista de Arda (Cada 20 min)
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+jobs:
+  recolectar-cronica:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.TOKEN_PRINCIPAL }}
+
+      - name: Configurar Python y recolectar dato legal de Arda
+        run: |
+          python3 -c '
+          import urllib.request, urllib.parse, json, os, datetime, random
+
+          temas = ["Gandalf", "Aragorn", "Rivendel", "Mordor", "Silmarillion", "Gollum", "Rohan", "Gondor", "Sauron", "Galadriel", "Beleriand", "Númenor", "Valinor", "Hobbiton", "Isengard"]
+          tema = random.choice(temas)
+          url = f"https://es.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(tema)}"
+          req = urllib.request.Request(url, headers={"User-Agent": "CronicasDeArdaBot/1.0"})
+          
+          with urllib.request.urlopen(req) as res:
+              data = json.loads(res.read().decode("utf-8"))
+
+          ts = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+          os.makedirs("data/cronicas", exist_ok=True)
+          ficha = {
+              "id": ts,
+              "titulo": data.get("title", tema),
+              "extracto": data.get("extract", ""),
+              "fuente": data.get("content_urls", {}).get("desktop", {}).get("page", ""),
+              "fecha_registro": datetime.datetime.utcnow().isoformat()
+          }
+          with open(f"data/cronicas/cronica_{ts}.json", "w", encoding="utf-8") as f:
+              json.dump(ficha, f, ensure_ascii=False, indent=2)
+          print(f"BRANCH=feat/cronica-{ts}")
+          ' >> $GITHUB_ENV
+
+      - name: Crear Rama, Commit y Push (Cuenta Principal)
+        run: |
+          git config user.name "Julianidiego"
+          git config user.email "Julianidiego96@gmail.com"
+          git checkout -b "$BRANCH"
+          git add data/cronicas/
+          git commit -m "feat(lore): registra nueva crónica de Arda ($BRANCH)" \
+                     -m "Co-authored-by: AvantTexte <thegithubfrenchproyect@gmail.com>"
+          git push origin "$BRANCH"
+
+      - name: Abrir PR (Principal) y Fusionar (Secundaria)
+        env:
+          GH_TOKEN_MAIN: ${{ secrets.TOKEN_PRINCIPAL }}
+          GH_TOKEN_REVIEWER: ${{ secrets.TOKEN_SECUNDARIA }}
+        run: |
+          PR_URL=$(GH_TOKEN=$GH_TOKEN_MAIN gh pr create \
+            --title "Crónica: $BRANCH" \
+            --body "Registro automático verificado desde fuente abierta." \
+            --head "$BRANCH" \
+            --base main)
+          sleep 3
+          GH_TOKEN=$GH_TOKEN_REVIEWER gh pr review "$PR_URL" --approve
+          GH_TOKEN=$GH_TOKEN_REVIEWER gh pr merge "$PR_URL" --merge --delete-branch
